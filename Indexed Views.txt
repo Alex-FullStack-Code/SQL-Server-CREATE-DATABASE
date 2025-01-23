@@ -1,0 +1,128 @@
+Materialized Views?
+- SQL Server has not
+
+In SQL Server, 
+the concept of Materialized Views as 
+implemented in some other database systems 
+(like Oracle or PostgreSQL) does not exist natively. 
+
+However, similar functionality can be achieved 
+using Indexed Views or 
+by creating Custom Processes that 
+periodically refresh a View 
+to make it behave similarly to 
+a materialized view.
+
+1. Indexed Views in SQL Server:
+
+SQL Server allows you to create indexed views, 
+which can persist the result set of 
+a query in the database. 
+
+When an index is created on a view, 
+SQL Server stores the result of 
+that view physically, 
+which makes it similar to 
+a materialized view. 
+
+The indexed views have 
+specific requirements and limitations.
+
+Key Characteristics of 
+Indexed Views:
+
+- The result of the view is 
+stored physically in the database.
+
+- Indexes can be created on the view, 
+which optimizes access to the data.
+
+- The view is automatically updated when 
+underlying data is modified 
+	(insert, update, delete).
+
+- There are restrictions on 
+the kinds of queries 
+that can be used in an indexed view 
+(e.g., no DISTINCT, GROUP BY, etc.).
+
+Steps 
+to create 
+an Indexed View:
+
+1. Create a view: 
+The first step is to create the view, 
+but it must meet certain requirements, 
+such as containing deterministic expressions,  
+no outer joins, and no aggregations 
+unless they are valid under 
+the indexed view restrictions.
+
+Example:
+CREATE VIEW dbo.MyIndexedView
+WITH SCHEMABINDING
+AS
+SELECT Column1, Column2, SUM(Column3) AS TotalColumn
+FROM dbo.MyTable
+GROUP BY Column1, Column2;
+
+2. Create an index on the view: 
+After creating the view, 
+you can create a Unique Clustered Index, 
+which physically materializes the data.
+
+Example:
+
+CREATE UNIQUE CLUSTERED INDEX IDX_MyIndexedView ON dbo.MyIndexedView (Column1, Column2);
+
+Once the index is created, 
+the view is stored on disk and 
+the data is materialized, 
+meaning the query can be run 
+much faster because it doesn't need to be 
+recalculated every time it is queried.
+
+2. Alternative Approach  
+
+- Scheduled Materialization 
+with a Job:
+
+Another approach is 
+to simulate materialized views by 
+using scheduled jobs (via SQL Server Agent) 
+that periodically refresh 
+a regular view or 
+table with the latest data.
+
+Steps to 
+simulate materialized views:
+
+1. Create a table to store the materialized data.
+
+CREATE TABLE dbo.MaterializedTable (
+    Column1 INT,
+    Column2 INT,
+    TotalColumn INT
+);
+
+2. Create a job 
+that runs a stored procedure 
+to refresh the data periodically. 
+This procedure would insert or update 
+the data in the table with the results of the query.
+
+Example stored procedure:
+
+CREATE PROCEDURE dbo.RefreshMaterializedTable
+AS
+BEGIN
+    TRUNCATE TABLE dbo.MaterializedTable;
+    INSERT INTO dbo.MaterializedTable (Column1, Column2, TotalColumn)
+    SELECT Column1, Column2, SUM(Column3)
+    FROM dbo.MyTable
+    GROUP BY Column1, Column2;
+END;
+
+3. Schedule the job 
+to run at regular intervals (e.g., every hour) 
+to refresh the materialized data.

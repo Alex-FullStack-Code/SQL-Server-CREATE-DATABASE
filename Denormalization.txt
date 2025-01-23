@@ -1,0 +1,174 @@
+What is 
+Denormalization?
+
+Denormalization in SQL Server 
+(or any RDBMS) 
+refers to the process of 
+merging tables 
+that are normally separated in 
+a normalized database schema. 
+
+This technique is typically used to 
+improve query performance at the cost of: 
+
+- potential data integrity issues 
+- increased storage requirements 
+- more complex data maintenance
+
+Why Denormalize?
+
+1. Improved Query Performance: 
+Denormalization can help 
+reduce the number of joins needed in complex queries, 
+thus improving query performance, 
+particularly in read-heavy applications.
+
+2. Faster Aggregation: 
+It allows faster retrieval of 
+aggregated data without 
+requiring multiple computations or joins
+
+3. Simplified Query Writing: 
+Complex joins and subqueries 
+can be avoided by 
+keeping related data together in 
+a single table.
+
+However, the trade-offs include 
+increased risk of data anomalies and 
+difficulties with 
+maintaining data consistency.
+
+Common 
+Denormalization Techniques
+
+1. Combining Tables: 
+Merge multiple related tables into a single table, 
+typically by including the columns of 
+one table into another. 
+ 
+If you have a Customer table and an Orders table, 
+you might merge them into a single table 
+to avoid joining them during query execution.
+
+Example 
+
+- Original structure: 
+Customer (CustomerID, Name), 
+Order (OrderID, CustomerID, Date, Amount)
+	
+- Denormalized structure:
+CustomerOrder (CustomerID, Name, OrderID, Date, Amount)
+
+2. Adding Redundant Data: 
+Storing Summary or Aggregated data 
+within the same table, 
+instead of computing it during queries.
+
+Example:
+
+Instead of 
+calculating the total order amount every time 
+from the Order table, 
+you could store the total in 
+the Customer table.
+	
+3. Using Materialized Views or Indexed Views: 
+In SQL Server, you can create 
+indexed views that precompute expensive queries. 
+
+These are materialized views 
+that store the result of a query physically, 
+reducing the need to recompute it every time.
+	
+4. Pre-computing Joins: 
+When data is frequently queried 
+from multiple tables, 
+pre-join tables and store the results. 
+
+This eliminates the need to perform 
+joins dynamically during query execution.
+
+5. Incorporating Lookup Data:
+/Включване на данни за търсене/ 
+
+Instead of performing lookups /извършване на търсения/  
+to retrieve related information, 
+denormalize the data by storing the lookup values 
+directly within the main table. 
+
+For instance, 
+storing ProductName directly in the OrderDetails table, 
+rather than joining with the Product table.
+
+Example of 
+Denormalization	
+	
+Step 1: Normalized Database	
+	
+CREATE TABLE Customers (
+    CustomerID INT PRIMARY KEY,
+    CustomerName VARCHAR(100)
+);
+
+CREATE TABLE Orders (
+    OrderID INT PRIMARY KEY,
+    CustomerID INT,
+    OrderDate DATETIME,
+    FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID)
+);
+
+Step 2: Denormalized Table
+
+CREATE TABLE CustomerOrders (
+    OrderID INT PRIMARY KEY,
+    CustomerID INT,
+    CustomerName VARCHAR(100),
+    OrderDate DATETIME
+);
+
+In this denormalized table, 
+the CustomerName is directly stored in 
+the CustomerOrders table, 
+eliminating the need for a join when 
+querying order data.
+
+Step 3: Query on Denormalized Data
+	
+SELECT OrderID, CustomerName, OrderDate
+FROM CustomerOrders
+WHERE CustomerID = 123;
+
+When to Denormalize?
+
+ - Read-heavy applications where 
+ performance is more important than data consistency
+ /съгласуваност на данните/
+ 
+ - Reporting and Analytics where 
+ queries often require aggregated data or complex joins.
+ 
+ - Real-time data access 
+ where fast response times are crucial.
+	
+When NOT to Denormalize?
+
+1. Write-heavy applications 
+where frequent insertions, updates, or deletions occur, 
+as denormalization can lead to 
+increased complexity in 
+maintaining data consistency.
+
+2. Highly transactional systems 
+where data integrity /целостта на данните/
+is a priority.
+
+3. When data redundancy /излишък на данни/ is a concern, 
+as denormalization leads to 
+repeated data and 
+potential inconsistencies.
+
+
+
+
+
