@@ -1,0 +1,535 @@
+
+We can execute 
+a list of operations 
+when an event occurs.
+
+Събитието което предизвиква Тригера, 
+може да е свързано само с 1 таблица,
+но вътре в тригера,
+кода може да обхваща много таблици.
+
+Разликата с Store Procedures?
+При Store Procedures, казваме изрично 
+кога ще се случат.
+
+Тригер се предизвиква,
+след или вместо /after, instead of/:
+INSERT, UPDATE, DELETE и
+съответно имаме Тригери закачени 
+за тези събития.
+
+AFTER INSERT
+AFTER UPDATE  
+AFTER DELETE 
+
+INSTEAD OF INSERT
+INSTEAD OF UPDATE 
+INSTEAD DELETE
+
+
+Функцията EXISTS е същото, 
+като COUNT(*) > 0
+
+Ако по време на операция с Тригер 
+възникне грешка, 
+операцията приключва 
+/и моята и тази за която е закачен Тригера/
+
+Може 
+CREATE OR ALTER TRIGGER 
+за да мога, 
+да си го променям в последствие!
+
+При DELETE - записите, 
+които са изтрити се намират в
+служебната таблица deleted
+
+при INSERT - записите,
+които са вкарани се намират в
+служебната таблица inserted
+
+при UPDATED - записите,
+които са вкарани се намират в
+служебната таблица 
+inserted и deleted,
+в deleted се намира 
+старата версия на реда,
+а в inserted новата версия на реда
+
+Може 1 Тригер да ефектва
+таблица и там друг Тригер 
+да се задейства и така до 32 Тригера!
+
+Може 1 Тригер да предизвиква себе си,
+но да имам условие if.. 
+щото иначе бездънна рекурсия!
+
+CREATE TRIGGER trg_AfterInsert
+ON dbo.YourTable
+AFTER INSERT
+AS
+BEGIN
+    -- Trigger logic goes here
+    -- You can refer to the inserted rows using the inserted pseudo-table
+    -- For example, inserting a record into an audit table
+
+    INSERT INTO dbo.AuditTable (Column1, Column2, ActionType, ActionDate)
+    SELECT Column1, Column2, 'INSERT', GETDATE()
+    FROM inserted;
+    
+    -- Any other actions can go here
+END;
+GO
+
+FROM inserted: 
+A special, virtual table in SQL Server 
+that holds the rows that were inserted.
+
+Example:
+If you have a table called Employees and 
+you want to log every insertion into 
+an EmployeeAudit table, 
+you could set up 
+an AFTER INSERT trigger 
+
+CREATE TRIGGER trg_AfterEmployeeInsert
+ON dbo.Employees
+AFTER INSERT
+AS
+BEGIN
+    INSERT INTO dbo.EmployeeAudit (EmployeeID, Action, ActionDate)
+    SELECT EmployeeID, 'INSERT', GETDATE()
+    FROM inserted;
+END;
+GO
+
+This will insert a record 
+into the EmployeeAudit table 
+every time a new row is added 
+to the Employees table.
+ 
+AFTER UPDATE Trigger:
+ 
+CREATE TRIGGER trg_AfterUpdate
+ON dbo.YourTable
+AFTER UPDATE
+AS
+BEGIN
+    -- Trigger logic goes here
+    -- You can refer to the old and new values using the inserted and deleted pseudo-tables
+    -- 'inserted' holds the new values, and 'deleted' holds the old values
+
+    -- Example: Log changes into an audit table
+    INSERT INTO dbo.AuditTable (Column1Old, Column1New, 
+	Column2Old, Column2New, ActionType, ActionDate)
+    SELECT 
+        d.Column1 AS Column1Old, i.Column1 AS Column1New, 
+        d.Column2 AS Column2Old, i.Column2 AS Column2New,
+        'UPDATE', GETDATE()
+    FROM inserted i
+    INNER JOIN deleted d ON i.PrimaryKeyColumn = d.PrimaryKeyColumn;
+    
+    -- Other trigger actions can go here
+END;
+GO
+
+inserted: 
+A virtual table that holds 
+the new values after the update.
+
+deleted: 
+A virtual table that holds 
+the old values before the update.
+
+Join inserted and deleted: 
+Typically, you join inserted and deleted 
+on the primary key or 
+a unique column to compare 
+old and new values.
+
+CREATE TRIGGER trg_AfterProductUpdate
+ON dbo.Products
+AFTER UPDATE
+AS
+BEGIN
+    INSERT INTO dbo.ProductAudit (ProductID, PriceOld, PriceNew, ActionType, ActionDate)
+    SELECT 
+        d.ProductID,
+        d.Price AS PriceOld, 
+        i.Price AS PriceNew,
+        'UPDATE', 
+        GETDATE()
+    FROM inserted i
+    INNER JOIN deleted d ON i.ProductID = d.ProductID
+    WHERE i.Price != d.Price;  -- Only log if the price has changed
+END;
+GO
+
+AFTER DELETE:
+
+CREATE TRIGGER trg_AfterDelete
+ON TableName
+AFTER DELETE
+AS
+BEGIN
+    -- Your logic here
+    -- You can refer to deleted rows using the "deleted" virtual table
+    SELECT * FROM deleted;
+    -- Example: Insert deleted data into a logging table
+    INSERT INTO LogTable (DeletedID, DeletedDate)
+    SELECT ID, GETDATE()
+    FROM deleted;
+END;
+
+
+INSTEAD OF TRIGGER:
+
+В SQL Server, 
+INSTEAD OF TRIGGER ви позволява да 
+дефинирате персонализирано поведение, 
+когато на таблица се извършва операция на вмъкване, 
+може да изпълни персонализирана логика 
+(като например промяна на данните, 
+вмъкване на данни в други таблици или 
+предотвратяване на изцяло вмъкването).
+
+CREATE TRIGGER TriggerName
+ON TableName
+INSTEAD OF INSERT
+AS
+BEGIN
+    -- Custom logic goes here
+    -- You can use the INSERTED virtual table to access the rows that were inserted
+    -- Example: Insert the data into a different table or modify it
+    INSERT INTO AnotherTable (Column1, Column2)
+    SELECT Column1, Column2
+    FROM INSERTED;
+END;
+
+Example:
+Let's say we have 2 tables: 
+Orders and OrderHistory. 
+When a new record is inserted into Orders, 
+we want to insert the same data into 
+OrderHistory and perform additional checks.
+
+CREATE TRIGGER trg_InsteadOfInsert
+ON Orders
+INSTEAD OF INSERT
+AS
+BEGIN
+    -- Example: Insert data into the OrderHistory table whenever a new order is added
+    INSERT INTO OrderHistory (OrderID, CustomerID, OrderDate)
+    SELECT OrderID, CustomerID, OrderDate
+    FROM INSERTED;
+
+    -- Additional logic could be added here, such as validation or logging
+    PRINT 'Order inserted into both Orders and OrderHistory';
+END;
+
+INSTEAD OF UPDATE:
+
+CREATE TRIGGER trgInsteadOfUpdateSalary
+ON Employees
+INSTEAD OF UPDATE
+AS
+BEGIN
+    -- Insert the change into the SalaryChangeLog table
+    INSERT INTO SalaryChangeLog (EmployeeID, OldSalary, NewSalary, ChangeDate)
+    SELECT i.EmployeeID, d.Salary, i.Salary, GETDATE()
+    FROM inserted i
+    JOIN deleted d ON i.EmployeeID = d.EmployeeID;
+    
+    -- Perform the update action manually (since the INSTEAD OF trigger overrides the default update behavior)
+    UPDATE e
+    SET e.Salary = i.Salary
+    FROM Employees e
+    INNER JOIN inserted i ON e.EmployeeID = i.EmployeeID;
+END;
+
+INSTEAD OF DELETE:
+
+CREATE TRIGGER trigger_name
+ON table_name
+INSTEAD OF DELETE
+AS
+BEGIN
+    -- Custom logic to replace the DELETE action
+    -- For example, you can log the deleted rows or take some other action
+    
+    -- Example: Insert the deleted rows into a log table
+    INSERT INTO log_table (deleted_id, deleted_date)
+    SELECT id, GETDATE()
+    FROM deleted;
+
+    -- Optionally, you can still delete from the original table if needed
+    -- DELETE FROM table_name WHERE id IN (SELECT id FROM deleted);
+END;
+
+CREATE TRIGGER trg_InsteadOfDelete_Employees
+ON Employees
+INSTEAD OF DELETE
+AS
+BEGIN
+    -- Log the deleted employee records into EmployeeDeletionLog table
+    INSERT INTO EmployeeDeletionLog (EmployeeID, EmployeeName, DeletedDate)
+    SELECT EmployeeID, EmployeeName, GETDATE()
+    FROM deleted;
+
+    -- Optionally, you can delete the rows from Employees if you want to perform the actual deletion.
+    -- DELETE FROM Employees WHERE EmployeeID IN (SELECT EmployeeID FROM deleted);
+END;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

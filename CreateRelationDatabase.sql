@@ -182,7 +182,7 @@ CREATE TABLE production.stocks (
 	FOREIGN KEY (product_id) REFERENCES production.products (product_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- drop tables
+-- drop tables, only if it already exists
 DROP TABLE IF EXISTS sales.order_items;
 
 -- drop the schemas
@@ -247,6 +247,24 @@ WHERE
 
 -- PRIMARY KEY constraint
 -- column or a group of columns that uniquely identifies each row in a table
+
+--Composite Primary Key:
+-- A Primary Key can also consist of 
+-- multiple columns (a composite primary key). 
+-- This ensures the combination of values in these columns is unique.
+
+CREATE TABLE Orders (
+    OrderID INT,
+    ProductID INT,
+    Quantity INT,
+    PRIMARY KEY (OrderID, ProductID)
+);
+-- In this case, the combination of OrderID and ProductID 
+-- uniquely identifies each record.
+ 
+--IF the table don't have PK
+ALTER TABLE TableName
+ADD CONSTRAINT PK_ConstraintName PRIMARY KEY (ColumnName);
 
 --Example 1:
 CREATE TABLE table_name (
@@ -838,9 +856,15 @@ CREATE TABLE Tickets
 )
 
 -- Store Procedure 
-/* is a named set of 1 or more SQL statements that can be executed together. 
+/* is a named set of 1 or more 
+SQL statements that can be executed together. 
 It is a database object that is created and stored in 
-the database management system. Stored procedures are typically used for performing common database operations, data processing, and automation of complex tasks. They are particularly valuable for enhancing database security, modularity, and code reusability.
+the database management system. Stored procedures are 
+typically used for performing common database operations, 
+data processing, and automation of complex tasks. 
+They are particularly valuable for 
+enhancing database security, modularity, 
+and code reusability.
  
  1.Enhance security: 
    By allowing controlled access to database operations and 

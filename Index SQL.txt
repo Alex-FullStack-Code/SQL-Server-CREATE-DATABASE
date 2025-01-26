@@ -1,0 +1,243 @@
+
+
+An index in SQL Server is 
+a database object that 
+improves the speed of 
+data retrieval operations on 
+a table or view. I
+
+Indexes are typically created on 
+columns that are frequently used in 
+search conditions 
+(like WHERE clauses), 
+join conditions (JOIN), 
+or ordering (ORDER BY). 
+
+They work similarly to 
+an index in a book, where 
+you can quickly find the page number 
+without reading the entire book.
+
+Types of Indexes:
+
+1. Clustered Index:  
+Sorts the data rows in the table 
+according to the indexed column(s). 
+
+A table can have only one clustered index 
+because the data can only be sorted in one way.
+
+The data rows themselves are stored in 
+the order of the clustered index.
+
+CREATE CLUSTERED INDEX idx_clustered ON Employees (LastName);
+
+2. Non-Clustered Index:
+This is a separate structure 
+that holds a sorted copy of 
+the indexed columns and 
+a pointer to the actual data rows. 
+
+A table can have multiple 
+non-clustered indexes.
+
+CREATE NONCLUSTERED INDEX idx_nonclustered ON Employees (FirstName);
+
+3. Unique Index:
+Ensures that all the values in 
+the indexed column(s) are unique.
+
+CREATE UNIQUE NONCLUSTERED INDEX idx_unique ON Employees (Email);
+
+4. Full-text Index:
+Specialized index used for 
+fast text searches on 
+large textual data.
+
+CREATE FULLTEXT INDEX ON Documents (Content)
+    KEY INDEX PK_Documents;
+
+5. Filtered Index:
+A non-clustered index 
+that is created with a filter condition. 
+
+It helps in indexing 
+a subset of rows, 
+which is useful when you have 
+a large table but only need to 
+index a portion of it.
+
+CREATE NONCLUSTERED INDEX idx_filtered ON Employees (LastName)
+WHERE Department = 'Sales';
+
+6. XML Index
+XML indexes are used to improve 
+performance on XML data types. 
+
+There are two types of XML indexes: 
+primary XML index and 
+secondary XML index.
+
+The primary XML index provides 
+a base index for XML columns, 
+while secondary XML indexes are used to 
+support specific query patterns 
+like path and value queries.
+
+CREATE PRIMARY XML INDEX idx_xml ON Orders (OrderDetails);
+ 
+How to Check Existing Indexes?
+You can view the indexes on 
+a table using the following query:
+
+SELECT * 
+FROM sys.indexes 
+WHERE object_id = OBJECT_ID('Employees');
+
+Benefits of Indexes:
+
+1. Faster Query Performance: 
+Indexes speed up data retrieval by allowing 
+the database engine to locate data 
+without scanning the entire table.
+
+2. Efficient Sorting: 
+When used in ORDER BY or GROUP BY clauses, 
+indexes help in sorting data more efficiently.
+
+Drawbacks of Indexes:
+
+1. Storage Overhead: 
+Indexes take up space in the database.
+
+2. Slower Write Operations: 
+Insert, update, and delete operations 
+can be slower because 
+the index must also be updated 
+when data in the indexed columns changes.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
