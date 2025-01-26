@@ -256,7 +256,8 @@ WHERE ManagerID IN
 )
 );
 
-ALTER TABLE Departments ALTER COLUMN ManagerID INT;
+ALTER TABLE Departments 
+ALTER COLUMN ManagerID INT;
 
 UPDATE Departments
   SET
@@ -280,12 +281,12 @@ WHERE EmployeeID IN
 DELETE FROM Employees
 WHERE EmployeeID IN
 (
-(
-    SELECT e.EmployeeID
-    FROM Employees AS e
-         JOIN Departments AS d ON e.DepartmentID = d.DepartmentID
-    WHERE d.Name IN('Production', 'Production Control')
-)
+	(
+		SELECT e.EmployeeID
+		FROM Employees AS e
+			 JOIN Departments AS d ON e.DepartmentID = d.DepartmentID
+		WHERE d.Name IN('Production', 'Production Control')
+	)
 );
 
 /* *****************************************************
@@ -298,7 +299,7 @@ WHERE EmployeeID IN
 
 CREATE PROCEDURE usp_DeleteEmployeesFromDepartment
 (
-                 @departmentId INT
+	@departmentId INT
 )
 AS
      BEGIN
