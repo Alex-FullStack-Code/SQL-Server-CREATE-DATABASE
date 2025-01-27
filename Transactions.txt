@@ -1,0 +1,525 @@
+Transaction is 
+a logical unit of work 
+that contains one or more 
+SQL operations 
+(such as INSERT, UPDATE, DELETE) 
+that are executed as a single unit.
+
+Transactions ensure the ACID:
+Atomicity, Consistency, 
+Isolation, Durability properties, 
+which guarantee the integrity and 
+correctness of the database.
+
+ensure 
+/inshua - гарантира ACID/
+
+integrity and correctness
+/целостта и коректността/ 
+
+ACID stands for 
+Atomicity, Consistency, 
+Isolation, and Durability
+
+1. Atomicity 
+- all goes at ones and
+SQL Server handles this using COMMIT 
+to finalize changes or 
+ROLLBACK to undo changes.
+
+2.Consistency 
+- A transaction takes 
+the database from one consistent state to another. 
+The database must always satisfy 
+integrity constraints 
+like foreign keys, unique constraints 
+
+3.Isolation
+- Transactions should execute independently, 
+even if they are running concurrently.
+ 
+SQL Server provides 
+different isolation levels, 
+READ COMMITTED, 
+SERIALIZABLE, 
+REPEATABLE READ, 
+SNAPSHOT
+to control how transaction data 
+is isolated from others.
+ 
+4.Durability: 
+Once a transaction is committed, 
+the changes are permanent, 
+even in the case of a system crash. 
+SQL Server ensures durability by 
+writing transaction logs to disk, 
+so committed transactions can be recovered.
+
+BEGIN TRANSACTION;
+-- Your SQL operations here
+COMMIT TRANSACTION;
+ 
+If something goes wrong 
+during the transaction, 
+you can roll back to the durable db state: 
+ROLLBACK TRANSACTION;
+
+
+BEGIN TRANSACTION;
+
+	BEGIN TRY
+		-- Example of multiple operations
+		INSERT INTO Employees (EmployeeID, Name) 
+		VALUES (1, 'John Doe');
+		
+		UPDATE Employees 
+		SET Name = 'Jane Smith' 
+		WHERE EmployeeID = 2;
+
+		-- If all operations succeed, commit the transaction
+		COMMIT TRANSACTION;
+	END TRY
+	
+	BEGIN CATCH
+		-- If an error occurs, roll back the transaction
+		ROLLBACK TRANSACTION;
+		-- Optionally, handle the error (e.g., log it)
+		PRINT ERROR_MESSAGE();
+	END CATCH;
+
+1. Savepoints:
+
+You can also SET Savepoints 
+within a transaction 
+to create points 
+to which you can roll back 
+without affecting the entire transaction. 
+
+This allows you to partially 
+undo certain operations if needed.
+
+BEGIN TRANSACTION;
+	
+	SAVE TRANSACTION Savepoint1;
+
+	-- Some SQL operations
+	-- If something goes wrong, you can roll back to the savepoint
+	
+	ROLLBACK TRANSACTION Savepoint1;
+
+COMMIT TRANSACTION; 
+
+SQL Server provides 
+several Isolation Levels 
+to control how transactions 
+interact with each other:
+
+- READ UNCOMMITTED
+- READ COMMITTED
+- REPEATABLE READ
+- SERIALIZABLE
+- Snapshot
+
+2.1. READ UNCOMMITTED: 
+Allows reading uncommitted changes 
+from other transactions (dirty reads).
+
+2.2. READ COMMITTED: 
+Default isolation level in SQL Server.
+Can only read data that has been committed.
+it doesn’t allow Dirty Reads, 
+but allows non-repeatable reads.
+
+2.3. REPEATABLE READ: 
+Prevents other transactions 
+from modifying data that 
+has been read by the current transaction.
+/if a transaction reads a value, 
+no other transaction can 
+modify or insert data 
+that would affect the result 
+of the original transaction’s read./
+ 
+2.4. SERIALIZABLE: 
+The highest level of isolation. 
+it prevents other transactions 
+from inserting or updating data 
+that would affect the current transaction.
+
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+
+Key Features of 
+Serializable Transaction:
+
+1. No Dirty Reads: 
+A transaction cannot read 
+uncommitted data 
+(similar to READ COMMITTED and REPEATABLE READ).
+
+2. No Non-Repeatable Reads: 
+Once a transaction reads a value, 
+no other transaction can modify or delete 
+that value until the current transaction 
+is finished (similar to REPEATABLE READ).
+
+3.No Phantom Reads: 
+This is the most significant difference 
+between SERIALIZABLE and REPEATABLE READ. 
+
+SERIALIZABLE prevents 
+new rows from being inserted into 
+the result set by another transaction. 
+
+This means that even if 
+another transaction inserts new rows 
+that meet the same criteria as 
+a query in the current transaction, 
+those rows won’t appear in the result set.
+
+Example of How SERIALIZABLE Works:
+
+Let’s consider two transactions running concurrently:
+
+    T1 selects a set of rows 
+	(customers from a particular region).
+	
+    T2 tries to insert new customers into 
+	that region or modify existing ones.
+
+Under SERIALIZABLE:
+
+    T1 would hold a lock 
+	on the set of rows it is reading.
+	
+    T2 would be blocked 
+	from inserting or modifying any row 
+	that overlaps with the result set of 
+	T1 until T1 commits or rolls back.
+
+
+How to Set 
+the Isolation Level to 
+ERIALIZABLE?
+	
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+
+BEGIN TRANSACTION;
+
+-- Perform queries, reads, etc.
+SELECT * FROM Orders WHERE OrderDate > '2024-01-01';
+
+-- Other actions...
+
+COMMIT;
+
+When to Use SERIALIZABLE?
+
+1. When absolute consistency is critical: 
+   If your application requires 
+   the strictest data integrity and 
+   you cannot tolerate any potential anomalies 
+   like phantom reads or non-repeatable reads.
+
+2. Financial applications: 
+   Scenarios like banking systems or 
+   transactional processing systems 
+   where the highest consistency is required.
+
+Performance Considerations:
+
+1. Blocking and Concurrency: 
+   Since SERIALIZABLE holds 
+   a range lock on the data being read, 
+   it can significantly reduce concurrency. 
+   
+   It can cause more blocking and 
+   slower performance, especially in 
+   environments with high transaction volume.
+   
+2. Higher Resource Usage: 
+   The locks held under SERIALIZABLE 
+   can prevent other transactions from 
+   accessing a significant portion of data, 
+   which can lead to delays or timeouts.
+
+3. Deadlocks: 
+   Due to the stringent locking, 
+   there’s a higher potential for Deadlocks, 
+   which can occur when 
+   2 transactions are waiting 
+   on each other to release locks.
+stringent - /streijunt - строг/
+
+2.5. Snapshot Isolation Level:
+Snapshot isolation ensures that 
+all data reads within a transaction 
+are based on the state of the data 
+at the start of the transaction 
+(or at the last committed transaction).
+
+This isolation level prevents 
+issues such as 
+dirty reads, 
+non-repeatable reads, 
+phantom reads, 
+but it does not prevent write skew
+
+write skew: 
+
+-2 transactions 
+updating different rows 
+based on the same business rule.
+/skew - sliu - изкривяване/
+
+- two transactions (or operations) 
+write to the same data but 
+are not synchronized properly. 
+
+Write Skew in 
+Distributed Databases:
+/distributed - разпределени/
+
+In distributed databases, 
+write skew can happen when 
+multiple transactions are allowed 
+to run concurrently, 
+but their execution order and 
+visibility to each other are 
+not properly managed. 
+
+A common scenario where this can arise 
+is when two separate transactions 
+read and write to overlapping data sets 
+in a way that causes 
+inconsistencies due to 
+the timing of the reads and writes.
+
+/overlapping - ouvalaping - припокриване/
+
+SQL Server използва row versioning 
+за реализиране на изолация на snapshot isolation. 
+
+Всеки ред данни има versioned copy stored in tempdb, 
+и транзакцията чете реда, като съществуваше в момента, 
+в който транзакцията започна, 
+независимо от едновременните актуализации на този ред.
+
+Enabling Snapshot Isolation:
+the database must have 
+READ_COMMITTED_SNAPSHOT set to ON 
+	
+Steps to Enable Snapshot Isolation:
+
+1. Enable 
+READ_COMMITTED_SNAPSHOT 
+on the Database:
+
+ALTER DATABASE YourDatabase
+SET READ_COMMITTED_SNAPSHOT ON;
+
+2. Set the Transaction Isolation Level
+to SNAPSHOT:
+
+SET TRANSACTION ISOLATION LEVEL SNAPSHOT;
+BEGIN TRANSACTION;
+-- Your queries here
+COMMIT;
+
+* Example of 
+Snapshot Isolation Usage:
+
+-- Enabling Snapshot Isolation
+ALTER DATABASE MyDatabase
+SET READ_COMMITTED_SNAPSHOT ON;
+
+-- Setting the transaction isolation level to Snapshot
+SET TRANSACTION ISOLATION LEVEL SNAPSHOT;
+
+BEGIN TRANSACTION;
+
+-- Running a query using snapshot isolation
+SELECT * FROM Products WHERE ProductID = 1;
+
+-- Perform other operations, ensuring the data is consistent as of the time the transaction started
+UPDATE Products SET Quantity = Quantity - 1 WHERE ProductID = 1;
+
+COMMIT TRANSACTION;
+
+Ключови точки:
+
+- Performance Impact: 
+Изолацията на моментите може да подобри 
+производителността чрез намаляване на блокирането, 
+но може да увеличи натоварването на TEMPDB, 
+тъй като съхранява версиите на реда.
+
+Concurrency: 
+Множество транзакции могат да работят едновременно 
+с по-малко заключващи конфликти, 
+подобрявайки пропускателната способност 
+в силно едновременни среди
+highly concurrent environments.
+
+Read Consistency: 
+Тъй като данните се versioned и съхраняват в TEMPDB, 
+всяка транзакция получава последователна снимка на данните, 
+предотвратявайки проблеми, 
+при които данните се променят по 
+време на транзакцията.
+
+Concurrency problems 
+in SQL Server: 
+
+1. Lost Updates
+2 transactions read the same data and 
+then both try to update it. 
+
+The last update overwrites the earlier one, 
+causing one of the updates to be "lost."
+
+2. Dirty Reads
+happens when a transaction reads data 
+that has been modified but not yet committed 
+by another transaction. 
+
+If the second transaction rolls back, 
+the first one would have read data 
+that doesn't actually exist.
+
+Example: 
+User A updates a value 
+but hasn't committed it yet.
+
+User B reads the uncommitted value.
+
+User A rolls back, 
+causing the data to revert, 
+but User B already read 
+the uncommitted value.
+
+3. Non-repeatable Reads occur when 
+a transaction reads the same data multiple times, 
+and another transaction modifies 
+the data in between. 
+
+Example:
+User A reads a value.
+
+User B changes that value and 
+commits the transaction.
+
+User A reads the value again 
+and sees a different value 
+than before.
+
+4. Phantom Reads
+happens when a transaction reads 
+a Set of Rows based on a query (SELECT), 
+and another transaction 
+inserts, deletes, or modifies rows 
+that would affect the results of that query.
+
+Example:
+User A runs a query to select 
+all orders greater than $100.
+
+User B inserts a new order 
+for $150 and commits.
+
+User A runs the same query and 
+sees the new order, 
+which wasn't there in the first query.
+
+Techniques to 
+Handle Concurrency
+
+1. Optimistic Concurrency Control:
+
+    Involves checking if 
+	the data has been modified 
+	before committing the transaction.
+	
+    If the data has been changed by 
+	another transaction, 
+	the current transaction can either 
+	retry or reject the operation.
+	
+2. Pessimistic Concurrency Control:
+
+    Locks the data for the duration of the transaction 
+	to prevent other transactions from accessing it.
+	/duration - mпродължителност/
+
+3. Transaction Isolation:
+
+    Setting the appropriate isolation level 
+	ensures the database handles concurrency 
+	according to your desired consistency.
+
+4. Using WITH (UPDLOCK) and WITH (ROWLOCK):
+
+    These table hints control 
+	how SQL Server locks rows 
+	during updates to avoid conflicts.
+	
+За да предотвратите проблеми с 
+concurrency issues в SQL Server, 
+важно е да изберете правилното ниво на изолация, 
+да използвате механизми за заключване, 
+където е подходящо, и да имате предвид 
+колко дълго транзакциите остават отворени. 
+
+Въпреки че по-високите нива на изолация 
+осигуряват по-добра последователност на данните, 
+те могат да повлияят отрицателно на 
+performance - производителността, 
+така че е важно да се намери баланс в 
+зависимост от нуждите на приложението.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

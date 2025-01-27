@@ -109,7 +109,7 @@ RETURNS VARCHAR(7)
 
 CREATE PROCEDURE usp_EmployeesBySalaryLevel
 (
-                 @levelOfSalary VARCHAR(7)
+	@levelOfSalary VARCHAR(7)
 )
 AS
      BEGIN
@@ -122,7 +122,7 @@ AS
 /* *****************************************************
 	Problem 7.	Define Function
 ********************************************************/
-
+/Comprised - compraizd - Състои се/
 CREATE FUNCTION ufn_IsWordComprised
 (
 	@setOfLetters NVARCHAR(MAX),
@@ -131,15 +131,18 @@ CREATE FUNCTION ufn_IsWordComprised
 RETURNS BIT
 AS
 	BEGIN
-			DECLARE @currentIndex INT= 1;
+			DECLARE @currentIndex INT = 1;
 			WHILE(@currentIndex <= LEN(@word))
 			BEGIN
-				DECLARE @currentLetter CHAR= SUBSTRING(@word, @currentIndex, 1);
+				-- SUBSTRING(expression, start, length)
+				-- CHARINDEX (substring, string, start_position)
+
+				DECLARE @currentLetter CHAR = SUBSTRING(@word, @currentIndex, 1);
 				IF(CHARINDEX(@currentLetter, @setOfLetters) <= 0)
 					BEGIN
 						RETURN 0;
 					END;
-				SET @currentIndex+=1;
+				SET @currentIndex += 1;
 			END;
 		RETURN 1;
 	END;
@@ -154,58 +157,69 @@ CREATE PROCEDURE usp_DeleteEmployeesFromDepartment
 )
 AS
      BEGIN
-         ALTER TABLE Employees ALTER COLUMN ManagerID INT;
-         ALTER TABLE Employees ALTER COLUMN DepartmentID INT;
+		-- update columns or add column:
+         ALTER TABLE Employees 
+		 ALTER COLUMN ManagerID INT;
+		 
+         ALTER TABLE Employees 
+		 ALTER COLUMN DepartmentID INT;
+		 
          UPDATE Employees
            SET
                DepartmentID = NULL
          WHERE EmployeeID IN
          (
-         (
-             SELECT e.EmployeeID
-             FROM Employees AS e
-                  JOIN Departments AS d ON e.DepartmentID = d.DepartmentID
-             WHERE d.Name = @departmentName
-         )
+			 (
+				 SELECT e.EmployeeID
+				 FROM Employees AS e
+					  JOIN Departments AS d ON e.DepartmentID = d.DepartmentID
+				 WHERE d.Name = @departmentName
+			 )
          );
          UPDATE Employees
            SET
                ManagerID = NULL
          WHERE ManagerID IN
          (
-         (
-             SELECT e.EmployeeID
-             FROM Employees AS e
-                  JOIN Departments AS d ON e.DepartmentID = d.DepartmentID
-             WHERE d.Name = @departmentName
-         )
+			 (
+				 SELECT e.EmployeeID
+				 FROM Employees AS e
+					  JOIN Departments AS d ON e.DepartmentID = d.DepartmentID
+				 WHERE d.Name = @departmentName
+			 )
          );
-         ALTER TABLE Departments ALTER COLUMN ManagerID INT;
+		 
+         ALTER TABLE Departments 
+		 ALTER COLUMN ManagerID INT;
+		 
          UPDATE Departments
            SET
                ManagerID = NULL
          WHERE Name = @departmentName;
+		 
          DELETE FROM Departments
          WHERE Name = @departmentName;
+		 
          DELETE FROM EmployeesProjects
          WHERE EmployeeID IN
          (
-         (
-             SELECT e.EmployeeID
-             FROM Employees AS e
-                  JOIN Departments AS d ON e.DepartmentID = d.DepartmentID
-             WHERE d.Name = @departmentName
-         )
+			 (
+				 SELECT e.EmployeeID
+				 FROM Employees AS e
+					  JOIN Departments AS d ON e.DepartmentID = d.DepartmentID
+				 WHERE d.Name = @departmentName
+			 )
          );
+		 
          DELETE FROM Employees
          WHERE EmployeeID IN
          (
-         (
-             SELECT e.EmployeeID
-             FROM Employees AS e
-                  JOIN Departments AS d ON e.DepartmentID = d.DepartmentID
-             WHERE d.Name = @departmentName
-         )
+			 (
+				 SELECT e.EmployeeID
+				 FROM Employees AS e
+					  JOIN Departments AS d ON e.DepartmentID = d.DepartmentID
+				 WHERE d.Name = @departmentName
+			 )
          );
      END;
          
@@ -226,21 +240,23 @@ ROLLBACK;
 /* *****************************************************
 	Option without procedure 
 ********************************************************/
-ALTER TABLE Employees ALTER COLUMN ManagerID INT;
+ALTER TABLE Employees 
+ALTER COLUMN ManagerID INT;
 
-ALTER TABLE Employees ALTER COLUMN DepartmentID INT;
+ALTER TABLE Employees 
+ALTER COLUMN DepartmentID INT;
 
 UPDATE Employees
   SET
       DepartmentID = NULL
 WHERE EmployeeID IN
 (
-(
-    SELECT e.EmployeeID
-    FROM Employees AS e
-         JOIN Departments AS d ON e.DepartmentID = d.DepartmentID
-    WHERE d.Name IN('Production', 'Production Control')
-)
+	(
+		SELECT e.EmployeeID
+		FROM Employees AS e
+			 JOIN Departments AS d ON e.DepartmentID = d.DepartmentID
+		WHERE d.Name IN('Production', 'Production Control')
+	)
 );
 
 UPDATE Employees
@@ -303,9 +319,11 @@ CREATE PROCEDURE usp_DeleteEmployeesFromDepartment
 )
 AS
      BEGIN
-         ALTER TABLE Employees ALTER COLUMN ManagerID INT;
+         ALTER TABLE Employees 
+		 ALTER COLUMN ManagerID INT;
 
-         ALTER TABLE Employees ALTER COLUMN DepartmentID INT;
+         ALTER TABLE Employees 
+		 ALTER COLUMN DepartmentID INT;
 
          UPDATE Employees
            SET
@@ -331,7 +349,8 @@ AS
          )
          );
 
-         ALTER TABLE Departments ALTER COLUMN ManagerID INT;
+         ALTER TABLE Departments 
+		 ALTER COLUMN ManagerID INT;
 
          UPDATE Departments
            SET
@@ -366,38 +385,33 @@ AS
 /* According the requirement */
 CREATE PROCEDURE usp_AssignProject
 (
-                 @emloyeeId INT,
-                 @projectID INT
+	@emloyeeId INT,
+	@projectID INT
 )
 AS
-     BEGIN
+	BEGIN
          BEGIN TRANSACTION;
-         INSERT INTO EmployeesProjects(EmployeeID,
-                                       ProjectID
-                                      )
-         VALUES
-         (
-                @emloyeeId,
-                @projectID
-         );
+         INSERT INTO EmployeesProjects(EmployeeID, ProjectID)
+         VALUES(@emloyeeId, @projectID);
          IF(
-           (
-               SELECT COUNT(EmployeeID)
-               FROM EmployeesProjects
-               WHERE EmployeeID = @emloyeeId
-           ) > 3)
-             BEGIN
-                 ROLLBACK;
-                 RAISERROR('The employee has too many projects!', 16, 1);
-         END;
+			   (
+				   SELECT COUNT(EmployeeID)
+				   FROM EmployeesProjects
+				   WHERE EmployeeID = @emloyeeId
+			   ) > 3
+		   )
+			BEGIN
+				ROLLBACK;
+				RAISERROR('The employee has too many projects!', 16, 1);
+			END;
          COMMIT;
-     END;
+	END;
 	   
 /* Same result without transaction */
 CREATE PROCEDURE usp_AssignProject
 (
-                 @emloyeeId INT,
-                 @projectID INT
+	@emloyeeId INT,
+	@projectID INT
 )
 AS
      BEGIN
@@ -429,15 +443,15 @@ AS
 
 CREATE TABLE Deleted_Employees
 (
-             EmployeeId   INT IDENTITY,
-             FirstName    NVARCHAR(50),
-             LastName     NVARCHAR(50),
-             MiddleName   NVARCHAR(50),
-             JobTitle     NVARCHAR(50),
-             DepartmentId INT,
-             Salary       DECIMAL(15, 2),
-             CONSTRAINT PK_Deleted_Employees PRIMARY KEY(EmployeeId),
-             CONSTRAINT FK_Deleted_Employees_Departments FOREIGN KEY(DepartmentId) REFERENCES Departments(DepartmentId)
+	EmployeeId   INT IDENTITY,
+	FirstName    NVARCHAR(50),
+	LastName     NVARCHAR(50),
+	MiddleName   NVARCHAR(50),
+	JobTitle     NVARCHAR(50),
+	DepartmentId INT,
+	Salary       DECIMAL(15, 2),
+	CONSTRAINT PK_Deleted_Employees PRIMARY KEY(EmployeeId),
+	CONSTRAINT FK_Deleted_Employees_Departments FOREIGN KEY(DepartmentId) REFERENCES Departments(DepartmentId)
 );
 GO
 
@@ -479,7 +493,7 @@ AS
 
 CREATE PROCEDURE usp_GetHoldersWithBalanceHigherThan
 (
-                 @balance MONEY
+	@balance MONEY
 )
 AS
      BEGIN
@@ -498,9 +512,9 @@ AS
 
 CREATE FUNCTION ufn_CalculateFutureValue
 (
-                @sum                MONEY,
-                @yearlyInterestRate FLOAT,
-                @numberOfYears      INT
+	@sum                MONEY,
+	@yearlyInterestRate FLOAT,
+	@numberOfYears      INT
 )
 RETURNS MONEY
 AS
@@ -514,8 +528,8 @@ AS
 
 CREATE PROCEDURE usp_CalculateFutureValueForAccount
 (
-                 @accountId    INT,
-                 @interestRate FLOAT
+	@accountId    INT,
+	@interestRate FLOAT
 )
 AS
      BEGIN
@@ -535,8 +549,8 @@ AS
 
 CREATE PROCEDURE usp_DepositMoney
 (
-                 @accountId   INT,
-                 @moneyAmount MONEY
+	@accountId   INT,
+	@moneyAmount MONEY
 )
 AS
      BEGIN
@@ -571,8 +585,8 @@ AS
 
 CREATE PROCEDURE usp_WithdrawMoney
 (
-                 @accountId   INT,
-                 @moneyAmount MONEY
+	@accountId   INT,
+	@moneyAmount MONEY
 )
 AS
      BEGIN
@@ -620,9 +634,9 @@ AS
 
 CREATE PROCEDURE usp_TransferMoney
 (
-                 @senderId   INT,
-                 @receiverId INT,
-                 @amount     MONEY
+	@senderId   INT,
+	@receiverId INT,
+	@amount     MONEY
 )
 AS
      BEGIN
@@ -685,12 +699,12 @@ USE Bank;
 
 CREATE TABLE Logs
 (
-             LogId     INT NOT NULL IDENTITY,
-             AccountId INT NOT NULL,
-             OldSum    MONEY NOT NULL,
-             NewSum    MONEY NOT NULL,
-             CONSTRAINT PK_Logs PRIMARY KEY(LogId),
-             CONSTRAINT FK_Logs_Accounts FOREIGN KEY(AccountId) REFERENCES Accounts(Id)
+	LogId     INT NOT NULL IDENTITY,
+	AccountId INT NOT NULL,
+	OldSum    MONEY NOT NULL,
+	NewSum    MONEY NOT NULL,
+	CONSTRAINT PK_Logs PRIMARY KEY(LogId),
+	CONSTRAINT FK_Logs_Accounts FOREIGN KEY(AccountId) REFERENCES Accounts(Id)
 );
 GO
 
@@ -723,11 +737,11 @@ AS
 
 CREATE TABLE NotificationEmails
 (
-             Id        INT NOT NULL IDENTITY,
-             Recipient INT NOT NULL,
-             Subject   NVARCHAR(50) NOT NULL,
-             Body      NVARCHAR(255) NOT NULL,
-             CONSTRAINT PK_NotificationEmails PRIMARY KEY(Id)
+	Id        INT NOT NULL IDENTITY,
+	Recipient INT NOT NULL,
+	Subject   NVARCHAR(50) NOT NULL,
+	Body      NVARCHAR(255) NOT NULL,
+	CONSTRAINT PK_NotificationEmails PRIMARY KEY(Id)
 );
 GO
 
@@ -796,7 +810,8 @@ AS
 ********************************************************/
 
 /* Trigget for validating user's level when buying items */
-CREATE TRIGGER tr_UserGameItems_LevelRestriction ON UserGameItems
+CREATE TRIGGER tr_UserGameItems_LevelRestriction 
+ON UserGameItems
 INSTEAD OF UPDATE
 AS
      BEGIN
@@ -809,7 +824,8 @@ AS
                    SELECT UserGameId
                    FROM inserted
                )
-           ) <
+           ) 
+		   <
            (
                SELECT MinLevel
                FROM Items
@@ -819,9 +835,9 @@ AS
                    FROM inserted
                )
            ))
-             BEGIN
+			BEGIN
                  RAISERROR('Your current level is not enough', 16, 1);
-         END;
+			END;
 
 /* Assign the new item when the exception isn't thrown */
          INSERT INTO UserGameItems
